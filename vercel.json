@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.py"
+    }
+  ],
+  "functions": {
+    "api/index.py": {
+      "runtime": "vercel-python@3.12",
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
+  "excludeFiles": [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    ".git/**",
+    ".venv/**",
+    "tests/**",
+    "docs/**",
+    "README.md",
+    "Dockerfile",
+    ".env"
+  ]
+}
