@@ -1,9 +1,13 @@
+"""
+Main Flask application for TranscriptHub.
+This file contains all the application initialization logic.
+"""
 import os
 import sys
 import logging
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask
+from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 
@@ -22,7 +26,10 @@ load_dotenv()
 logger.info("Environment variables loaded")
 
 # Create the Flask app
-app = Flask(__name__)
+app = Flask(__name__, 
+           template_folder='../templates',
+           static_folder='../static')
+           
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # Fix for SSL behind proxies
 
 # Configure application settings
@@ -51,22 +58,27 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'max_overflow': 5     # Allow up to 5 connections beyond pool_size when needed
 }
 
-# Import database models after app initialization
-from models import db, User, Transcript, Chat, Message
+# Import or initialize extensions
+from api.models import db
+from api.models import User, Transcript, Chat, Message
 
 # Initialize extensions
 db.init_app(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # type: ignore
 
-# Import all routes and views
-try:
-    from main import *  # Import all routes from main.py
-    logger.info("Routes imported successfully")
-except Exception as e:
-    logger.error(f"Error importing routes: {str(e)}")
-    import traceback
-    logger.error(traceback.format_exc())
+# Close database sessions after each request
+@app.teardown_request
+def shutdown_session(exception=None):
+    db.session.remove()
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        return User.query.get(int(user_id))
+    except Exception as e:
+        logger.error(f"Error loading user: {str(e)}")
+        return None
 
 # Initialize database if needed
 with app.app_context():
@@ -78,6 +90,9 @@ with app.app_context():
         logger.error(f"Database initialization error: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
+
+# Import routes after app is initialized
+from api.routes import *
 
 # Run the application if executed directly
 if __name__ == "__main__":

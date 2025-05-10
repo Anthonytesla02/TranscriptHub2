@@ -1,23 +1,23 @@
+"""
+Route definitions for the TranscriptHub application.
+"""
 import os
 import json
+import logging
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from youtube_transcript_api._api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
 from urllib.parse import urlparse, parse_qs
-from models import User, Transcript, Chat, Message, db
-from utils import get_chat_response, summarize_transcript
+from api.app import app, db
+from api.models import User, Transcript, Chat, Message
+from api.utils import get_chat_response, summarize_transcript
 
-# The app object is now imported from app.py, not defined here
-# app is now defined in app.py and is imported by the following statement when app.py imports this file:
-# from main import *
+# Configure logging
+logger = logging.getLogger(__name__)
 
-# Close database sessions after each request
-# This decorator will be applied when app.py imports this file
-def shutdown_session(exception=None):
-    db.session.remove()
-
+# Helper function for safe database queries
 def safe_db_query(query_function, default_return=None, log_prefix="Database error"):
     """
     Executes a database query function safely with error handling
@@ -35,8 +35,8 @@ def safe_db_query(query_function, default_return=None, log_prefix="Database erro
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"{log_prefix}: {str(e)}")
-        print(f"Traceback: {error_details}")
+        logger.error(f"{log_prefix}: {str(e)}")
+        logger.error(f"Traceback: {error_details}")
         
         # Try to rollback the session
         try:
@@ -46,17 +46,7 @@ def safe_db_query(query_function, default_return=None, log_prefix="Database erro
             
         return default_return
 
-@login_manager.user_loader
-def load_user(user_id):
-    def query():
-        return User.query.get(int(user_id))
-    
-    return safe_db_query(
-        query, 
-        default_return=None, 
-        log_prefix="Error loading user"
-    )
-
+# Helper function to extract YouTube video ID from URLs
 def extract_video_id(url):
     """
     Extract the YouTube video ID from various YouTube URL formats.
@@ -100,92 +90,7 @@ def extract_video_id(url):
     # If all checks fail, return None
     return None
 
-# Automatic database setup algorithm
-with app.app_context():
-    try:
-        print("Starting automatic database setup...")
-        
-        # Test the database connection first
-        def check_db_connection():
-            from sqlalchemy import text
-            try:
-                return db.session.execute(text("SELECT 1")).fetchone() is not None
-            except Exception as e:
-                print(f"Database connection error: {str(e)}")
-                return False
-            
-        # Step 1: Verify database connection
-        if not check_db_connection():
-            print("Warning: Initial database connection check failed. Waiting 2 seconds and retrying...")
-            import time
-            time.sleep(2)
-            
-            if not check_db_connection():
-                print("Error: Database connection failed after retry. Check your PostgreSQL configuration.")
-            else:
-                print("Database connection established on retry.")
-        else:
-            print("Database connection verified successfully.")
-        
-        # Step 2: Create database schema if needed
-        print("Creating database tables if they don't exist...")
-        db.create_all()
-        print("Database tables created or already exist.")
-        
-        # Step 3: Add indexes for performance if they don't exist
-        # This is done automatically by SQLAlchemy
-        
-        # Step 4: Verify all required tables exist
-        def verify_tables():
-            from sqlalchemy import inspect
-            inspector = inspect(db.engine)
-            required_tables = ['user', 'transcript', 'chat', 'message']
-            existing_tables = inspector.get_table_names()
-            
-            missing_tables = [table for table in required_tables if table not in existing_tables]
-            if missing_tables:
-                print(f"Warning: Missing tables: {missing_tables}")
-                return False
-            return True
-        
-        if verify_tables():
-            print("All required database tables exist.")
-        else:
-            print("Some required tables are missing. Attempting to recreate...")
-            db.create_all()
-        
-        # Step 5: Create test user account if it doesn't exist
-        def create_test_user():
-            if not User.query.filter_by(username='testuser').first():
-                print("Creating test user account...")
-                test_user = User(username='testuser', password=generate_password_hash('password123'))
-                db.session.add(test_user)
-                db.session.commit()
-                return True
-            return False
-            
-        user_created = safe_db_query(
-            create_test_user,
-            default_return=False,
-            log_prefix="Error creating test user"
-        )
-        
-        if user_created:
-            print("Test user created successfully. Username: testuser, Password: password123")
-        else:
-            print("Test user already exists or could not be created.")
-            
-        print("Automatic database setup completed successfully.")
-            
-    except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        print(f"Error during database initialization: {str(e)}")
-        print(f"Traceback: {error_details}")
-        
-        # Don't fail the application startup, log the error and continue
-        print("Warning: Application started but database initialization had errors.")
-
+# Route definitions
 @app.route('/')
 def landing():
     """Landing page with pricing and features"""
@@ -247,7 +152,7 @@ def extract():
         try:
             summary = summarize_transcript(transcript_text)
         except Exception as e:
-            print(f"Error generating summary: {str(e)}")
+            logger.error(f"Error generating summary: {str(e)}")
             summary = "Summary could not be generated automatically."
 
         return render_template('result.html', 
@@ -263,8 +168,8 @@ def extract():
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"Error extracting transcript: {str(e)}")
-        print(f"Traceback: {error_details}")
+        logger.error(f"Error extracting transcript: {str(e)}")
+        logger.error(f"Traceback: {error_details}")
         flash(f'An error occurred: {str(e)}', 'danger')
 
     return redirect(url_for('index'))
@@ -328,8 +233,8 @@ def login():
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            print(f"Database error during login: {str(e)}")
-            print(f"Traceback: {error_details}")
+            logger.error(f"Database error during login: {str(e)}")
+            logger.error(f"Traceback: {error_details}")
             flash('A database connection error occurred. Please try again.', 'danger')
             
             # Try to reconnect to the database
@@ -355,8 +260,8 @@ def dashboard():
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"Database error in dashboard: {str(e)}")
-        print(f"Traceback: {error_details}")
+        logger.error(f"Database error in dashboard: {str(e)}")
+        logger.error(f"Traceback: {error_details}")
         flash('Unable to load your transcripts. Database connection issue.', 'danger')
         
         # Try to rollback the session
@@ -417,54 +322,67 @@ def chat(chat_id):
 @login_required
 def send_message():
     """API endpoint to send a message and get an AI response"""
-    data = request.json
-    chat_id = data.get('chat_id')
-    content = data.get('content')
-    
-    if not chat_id or not content:
-        return jsonify({'error': 'Missing chat_id or content'}), 400
-    
-    # Verify the chat exists and belongs to the user
-    chat = Chat.query.get_or_404(chat_id)
-    if chat.user_id != current_user.id:
-        return jsonify({'error': 'You do not have permission to access this chat'}), 403
-    
-    # Get the transcript
-    transcript = Transcript.query.get(chat.transcript_id)
-    
-    # Save the user message
-    user_message = Message(
-        content=content,
-        role='user',
-        chat_id=chat_id
-    )
-    db.session.add(user_message)
-    db.session.commit()
-    
-    # Get all messages for context
-    messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.timestamp).all()
-    formatted_messages = [{'role': msg.role, 'content': msg.content} for msg in messages]
-    
-    # Get AI response
     try:
-        ai_response = get_chat_response(formatted_messages, transcript.content)
+        # Get request data
+        data = request.json
+        chat_id = data.get('chat_id')
+        message_content = data.get('message')
+        
+        # Verify ownership of chat
+        chat = Chat.query.get_or_404(chat_id)
+        if chat.user_id != current_user.id:
+            return jsonify({'error': 'You do not have permission to access this chat'}), 403
+            
+        # Get transcript for context
+        transcript = Transcript.query.get_or_404(chat.transcript_id)
+        
+        # Save the user message
+        user_message = Message(
+            content=message_content,
+            role='user',
+            chat_id=chat_id
+        )
+        db.session.add(user_message)
+        db.session.commit()
+        
+        # Get all messages for context
+        messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.timestamp).all()
+        message_list = [{'role': msg.role, 'content': msg.content} for msg in messages]
+        
+        # Get AI response
+        ai_response_content = get_chat_response(message_list, transcript.content)
         
         # Save the AI response
-        assistant_message = Message(
-            content=ai_response,
+        ai_message = Message(
+            content=ai_response_content,
             role='assistant',
             chat_id=chat_id
         )
-        db.session.add(assistant_message)
+        db.session.add(ai_message)
         db.session.commit()
         
         return jsonify({
-            'response': ai_response,
-            'message_id': assistant_message.id
+            'success': True,
+            'user_message': {
+                'id': user_message.id,
+                'content': user_message.content,
+                'role': user_message.role,
+                'timestamp': user_message.timestamp.isoformat()
+            },
+            'ai_message': {
+                'id': ai_message.id,
+                'content': ai_message.content,
+                'role': ai_message.role,
+                'timestamp': ai_message.timestamp.isoformat()
+            }
         })
     except Exception as e:
-        print(f"Error getting AI response: {str(e)}")
-        return jsonify({'error': f'Error getting AI response: {str(e)}'}), 500
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Error in send_message: {str(e)}")
+        logger.error(f"Traceback: {error_details}")
+        
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/chats')
 @login_required
@@ -472,6 +390,3 @@ def chats():
     """Show all chats for the current user"""
     user_chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).all()
     return render_template('chats.html', chats=user_chats)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
