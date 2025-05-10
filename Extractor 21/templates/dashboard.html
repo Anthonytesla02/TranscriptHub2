@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-container fade-in">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2 class="fw-bold">
+        <i class="fas fa-list-ul text-primary me-2"></i>Your Transcript Library
+      </h2>
+      <p class="text-muted">Manage all your saved YouTube transcripts in one place</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Extract New Transcript
+      </a>
+    </div>
+  </div>
+
+  <!-- Search and filter bar -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <div class="search-bar mb-0">
+            <i class="fas fa-search search-icon"></i>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="searchTranscripts" 
+              placeholder="Search your transcripts..."
+            >
+          </div>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select" id="sortTranscripts">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="alpha">Alphabetical</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transcript listing -->
+  <div id="transcriptsList">
+    {% if transcripts %}
+      {% for t in transcripts %}
+      <div class="card transcript-card mb-4 transcript-item" data-date="{{ t.created_at.strftime('%Y-%m-%d') }}" data-url="{{ t.video_url }}">
+        <div class="transcript-header">
+          <div class="d-flex align-items-center">
+            {% set video_id = t.video_url.split('v=')[1].split('&')[0] if 'v=' in t.video_url else t.video_url.split('/')[-1] %}
+            <div class="me-3" style="min-width: 80px; min-height: 45px;">
+              <img 
+                src="https://img.youtube.com/vi/{{ video_id }}/default.jpg" 
+                alt="Video Thumbnail" 
+                class="img-fluid rounded"
+                style="max-width: 80px;"
+              >
+            </div>
+            <div>
+              <h6 class="transcript-title mb-1">{{ t.video_url }}</h6>
+              <div class="transcript-meta">
+                <small class="text-muted">
+                  <i class="far fa-calendar-alt me-1"></i> {{ t.created_at.strftime('%B %d, %Y') }}
+                  <span class="mx-2">|</span>
+                  <i class="far fa-clock me-1"></i> {{ t.created_at.strftime('%I:%M %p') }}
+                </small>
+              </div>
+            </div>
+          </div>
+          <div class="transcript-actions">
+            <button class="btn btn-sm btn-outline-primary me-1 toggle-transcript" data-transcript-id="{{ t.id }}">
+              <i class="fas fa-eye"></i> View
+            </button>
+            <form action="{{ url_for('create_chat', transcript_id=t.id) }}" method="POST" class="d-inline me-1">
+              <button type="submit" class="btn btn-sm btn-primary">
+                <i class="fas fa-robot"></i> AI Chat
+              </button>
+            </form>
+            <div class="dropdown d-inline-block">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#" onclick="copyTranscriptContent({{ t.id }}); return false;">
+                    <i class="fas fa-copy me-2"></i>Copy Content
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" onclick="downloadTranscript({{ t.id }}, '{{ video_id }}'); return false;">
+                    <i class="fas fa-download me-2"></i>Download
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ t.video_url }}" target="_blank">
+                    <i class="fab fa-youtube me-2 text-danger"></i>Watch on YouTube
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="transcript-content collapse" id="transcript-{{ t.id }}">
+          <div class="card-body">
+            <pre class="transcript">{{ t.content }}</pre>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="card">
+        <div class="card-body text-center py-5">
+          <div class="empty-state-icon mb-4">
+            <i class="fas fa-list text-muted fa-3x"></i>
+          </div>
+          <h4>No Transcripts Yet</h4>
+          <p class="text-muted mb-4">You haven't extracted any YouTube transcripts yet.</p>
+          <a href="{{ url_for('index') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Extract Your First Transcript
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+  
+  <!-- Empty search results state -->
+  <div id="noSearchResults" class="card d-none">
+    <div class="card-body text-center py-5">
+      <div class="empty-state-icon mb-4">
+        <i class="fas fa-search text-muted fa-3x"></i>
+      </div>
+      <h4>No Matching Transcripts</h4>
+      <p class="text-muted mb-4">No transcripts match your search criteria.</p>
+      <button class="btn btn-outline-secondary" id="clearSearch">
+        <i class="fas fa-times me-2"></i>Clear Search
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden download link -->
+<a id="downloadLink" style="display: none;" download="transcript.txt"></a>
+
+<!-- JavaScript for functionality -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Toggle transcript visibility
+    const toggleBtns = document.querySelectorAll('.toggle-transcript');
+    toggleBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const transcriptId = this.getAttribute('data-transcript-id');
+        const contentDiv = document.getElementById(`transcript-${transcriptId}`);
+        
+        // Toggle collapse
+        if (contentDiv.classList.contains('show')) {
+          contentDiv.classList.remove('show');
+          this.innerHTML = '<i class="fas fa-eye"></i> View';
+        } else {
+          contentDiv.classList.add('show');
+          this.innerHTML = '<i class="fas fa-eye-slash"></i> Hide';
+        }
+      });
+    });
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchTranscripts');
+    const transcriptItems = document.querySelectorAll('.transcript-item');
+    const noResultsEl = document.getElementById('noSearchResults');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    
+    searchInput.addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase().trim();
+      let resultsFound = false;
+      
+      transcriptItems.forEach(item => {
+        const url = item.getAttribute('data-url').toLowerCase();
+        const content = item.querySelector('.transcript').textContent.toLowerCase();
+        
+        if (url.includes(searchTerm) || content.includes(searchTerm)) {
+          item.style.display = 'block';
+          resultsFound = true;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      // Show/hide "no results" message
+      if (resultsFound || searchTerm === '') {
+        noResultsEl.classList.add('d-none');
+      } else {
+        noResultsEl.classList.remove('d-none');
+      }
+    });
+    
+    clearSearchBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      transcriptItems.forEach(item => {
+        item.style.display = 'block';
+      });
+      noResultsEl.classList.add('d-none');
+    });
+    
+    // Sort functionality
+    const sortSelect = document.getElementById('sortTranscripts');
+    const transcriptList = document.getElementById('transcriptsList');
+    
+    sortSelect.addEventListener('change', function() {
+      const sortValue = this.value;
+      const transcripts = Array.from(transcriptItems);
+      
+      switch(sortValue) {
+        case 'newest':
+          transcripts.sort((a, b) => {
+            return new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date'));
+          });
+          break;
+        case 'oldest':
+          transcripts.sort((a, b) => {
+            return new Date(a.getAttribute('data-date')) - new Date(b.getAttribute('data-date'));
+          });
+          break;
+        case 'alpha':
+          transcripts.sort((a, b) => {
+            return a.getAttribute('data-url').localeCompare(b.getAttribute('data-url'));
+          });
+          break;
+      }
+      
+      // Reorder elements
+      transcripts.forEach(transcript => {
+        transcriptList.appendChild(transcript);
+      });
+    });
+  });
+  
+  // Copy transcript content
+  function copyTranscriptContent(id) {
+    const content = document.querySelector(`#transcript-${id} .transcript`).textContent;
+    navigator.clipboard.writeText(content).then(() => {
+      // Show a toast or some feedback
+      alert('Transcript copied to clipboard!');
+    });
+  }
+  
+  // Download transcript
+  function downloadTranscript(id, videoId) {
+    const content = document.querySelector(`#transcript-${id} .transcript`).textContent;
+    const downloadLink = document.getElementById('downloadLink');
+    downloadLink.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+    downloadLink.download = `youtube-transcript-${videoId}.txt`;
+    downloadLink.click();
+  }
+</script>
+
+<style>
+  .empty-state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(67, 97, 238, 0.1);
+    border-radius: 50%;
+  }
+  
+  /* Add highlight styles for search results */
+  .highlight {
+    background-color: rgba(255, 193, 7, 0.3);
+    padding: 0.1em 0.2em;
+    border-radius: 0.2em;
+  }
+</style>
+{% endblock %}

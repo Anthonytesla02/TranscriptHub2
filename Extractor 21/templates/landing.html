@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+  <head>
+    <meta charset="utf-8">
+    <title>TranscriptHub - YouTube Transcript Extractor & AI Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Extract, analyze, and chat with YouTube transcripts using AI technology.">
+
+    <!-- Bootstrap 5.3 CSS with CSS variables for theming -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+      /* Landing Page Specific Styles */
+      body {
+        padding-top: 0;
+      }
+      
+      .hero-section {
+        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+        color: white;
+        padding: 6rem 0;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .hero-bg-shapes {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        z-index: 0;
+      }
+      
+      .hero-shape {
+        position: absolute;
+        opacity: 0.1;
+        border-radius: 50%;
+      }
+      
+      .hero-shape-1 {
+        width: 300px;
+        height: 300px;
+        background-color: white;
+        top: -100px;
+        right: -50px;
+      }
+      
+      .hero-shape-2 {
+        width: 200px;
+        height: 200px;
+        background-color: white;
+        bottom: -50px;
+        left: 10%;
+      }
+      
+      .hero-shape-3 {
+        width: 100px;
+        height: 100px;
+        background-color: white;
+        top: 20%;
+        left: 20%;
+      }
+      
+      .hero-content {
+        position: relative;
+        z-index: 1;
+      }
+      
+      .hero-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+      }
+      
+      .hero-description {
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+      }
+      
+      .section-title {
+        margin-bottom: 3rem;
+        position: relative;
+      }
+      
+      .section-title:after {
+        content: '';
+        display: block;
+        width: 50px;
+        height: 3px;
+        background-color: var(--primary-color);
+        margin: 1rem auto 0;
+      }
+      
+      .how-it-works-step {
+        text-align: center;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+      
+      .how-it-works-step:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--box-shadow);
+      }
+      
+      .step-number {
+        width: 50px;
+        height: 50px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 auto 1.5rem;
+      }
+      
+      .pricing-card {
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+        margin-bottom: 2rem;
+      }
+      
+      .pricing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+      }
+      
+      .pricing-header {
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .pricing-popular .pricing-header {
+        background-color: var(--primary-color);
+        color: white;
+      }
+      
+      .pricing-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      
+      .pricing-price {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+      
+      .pricing-period {
+        font-size: 1rem;
+        opacity: 0.8;
+      }
+      
+      .pricing-features {
+        padding: 2rem;
+      }
+      
+      .pricing-feature {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      
+      .pricing-feature-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+      }
+      
+      .pricing-popular .pricing-feature-icon {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+      
+      .pricing-cta {
+        padding: 0 2rem 2rem;
+        text-align: center;
+      }
+      
+      .testimonial-card {
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        background-color: white;
+        box-shadow: var(--box-shadow);
+        margin-bottom: 2rem;
+      }
+      
+      .testimonial-content {
+        font-style: italic;
+        margin-bottom: 1.5rem;
+        position: relative;
+      }
+      
+      .testimonial-content:before {
+        content: """;
+        font-size: 4rem;
+        font-family: serif;
+        color: rgba(67, 97, 238, 0.1);
+        position: absolute;
+        top: -2rem;
+        left: -1rem;
+      }
+      
+      .testimonial-author {
+        display: flex;
+        align-items: center;
+      }
+      
+      .testimonial-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin-right: 1rem;
+      }
+      
+      .testimonial-name {
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      
+      .testimonial-title {
+        font-size: 0.875rem;
+        color: var(--gray-color);
+      }
+      
+      .faq-item {
+        margin-bottom: 1rem;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+      
+      .faq-question {
+        padding: 1.25rem;
+        background-color: white;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .faq-answer {
+        padding: 0 1.25rem;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s, padding 0.3s;
+      }
+      
+      .faq-item.active .faq-answer {
+        padding: 1.25rem;
+        max-height: 300px;
+      }
+      
+      .feature-icon-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1.5rem;
+      }
+      
+      .navbar-landing {
+        transition: background-color 0.3s, box-shadow 0.3s;
+        padding: 1rem 0;
+      }
+      
+      .navbar-landing.scrolled {
+        background-color: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      
+      [data-bs-theme="dark"] .navbar-landing.scrolled {
+        background-color: #1a1b25;
+      }
+      
+      [data-bs-theme="dark"] .pricing-header {
+        background-color: #1e293b;
+        border-color: #334155;
+      }
+      
+      [data-bs-theme="dark"] .pricing-card {
+        background-color: #1a1b25;
+      }
+      
+      [data-bs-theme="dark"] .testimonial-card,
+      [data-bs-theme="dark"] .faq-question {
+        background-color: #1a1b25;
+      }
+      
+      .cta-section {
+        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+        color: white;
+        padding: 4rem 0;
+        text-align: center;
+      }
+      
+      .floating-image {
+        animation: float 6s ease-in-out infinite;
+      }
+      
+      @keyframes float {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-20px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+      
+      @media (max-width: 768px) {
+        .hero-title {
+          font-size: 2.25rem;
+        }
+        
+        .hero-description {
+          font-size: 1.1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-landing fixed-top" id="navbar">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-closed-captioning brand-icon"></i> TranscriptHub
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+          <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" href="#features">Features</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#how-it-works">How It Works</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#pricing">Pricing</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#faq">FAQ</a>
+            </li>
+          </ul>
+          
+          <div class="d-flex align-items-center">
+            <!-- Theme toggle -->
+            <button id="themeToggle" class="btn btn-icon me-2">
+              <i class="fas fa-moon"></i>
+            </button>
+            
+            <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">
+              <i class="fas fa-sign-in-alt me-1"></i> Login
+            </a>
+            <a class="btn btn-primary" href="{{ url_for('signup') }}">
+              <i class="fas fa-user-plus me-1"></i> Sign Up Free
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-bg-shapes">
+        <div class="hero-shape hero-shape-1"></div>
+        <div class="hero-shape hero-shape-2"></div>
+        <div class="hero-shape hero-shape-3"></div>
+      </div>
+      <div class="container">
+        <div class="row align-items-center hero-content">
+          <div class="col-lg-6">
+            <h1 class="hero-title">Extract YouTube Transcripts & Chat with AI</h1>
+            <p class="hero-description">TranscriptHub makes it easy to extract, analyze, and interact with YouTube video transcripts. Ask questions and get instant AI-powered answers based on the video content.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="{{ url_for('signup') }}" class="btn btn-light btn-lg">
+                <i class="fas fa-rocket me-2"></i> Get Started Free
+              </a>
+              <a href="#how-it-works" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-play-circle me-2"></i> See How It Works
+              </a>
+            </div>
+          </div>
+          <div class="col-lg-6 d-none d-lg-block text-center">
+            <img src="https://placehold.co/600x400/4361ee/FFFFFF/png?text=TranscriptHub&font=Poppins" alt="TranscriptHub Demo" class="img-fluid rounded-3 shadow-lg floating-image" style="max-width: 90%;">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-5 my-5" id="features">
+      <div class="container">
+        <div class="text-center mb-5">
+          <h2 class="section-title">Powerful Features</h2>
+          <p class="lead text-muted">Transform how you interact with YouTube content</p>
+        </div>
+        
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body text-center p-4">
+                <div class="feature-icon-large">
+                  <i class="fas fa-closed-captioning"></i>
+                </div>
+                <h4>Instant Transcript Extraction</h4>
+                <p class="text-muted">Extract the full transcript from any YouTube video in seconds. Just paste the URL and let our system do the work.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body text-center p-4">
+                <div class="feature-icon-large">
+                  <i class="fas fa-robot"></i>
+                </div>
+                <h4>AI-Powered Chat</h4>
+                <p class="text-muted">Ask questions about the video content and receive instant, accurate answers from our advanced AI assistant.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body text-center p-4">
+                <div class="feature-icon-large">
+                  <i class="fas fa-align-left"></i>
+                </div>
+                <h4>Automatic Summaries</h4>
+                <p class="text-muted">Get AI-generated summaries of video content, highlighting key points and main topics covered.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body text-center p-4">
+                <div class="feature-icon-large">
+                  <i class="fas fa-search"></i>
+                </div>
+                <h4>Searchable Content</h4>
+                <p class="text-muted">Easily search through transcript text to find specific information, with highlighted results.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body text-center p-4">
+                <div class="feature-icon-large">
+                  <i class="fas fa-history"></i>
+                </div>
+                <h4>History & Management</h4>
+                <p class="text-muted">All your transcripts and conversations are saved and organized in your personal dashboard.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body text-center p-4">
+                <div class="feature-icon-large">
+                  <i class="fas fa-lock"></i>
+                </div>
+                <h4>Secure & Private</h4>
+                <p class="text-muted">Your data is secure and private. We never share your information or conversations with third parties.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="py-5 bg-light" id="how-it-works">
+      <div class="container">
+        <div class="text-center mb-5">
+          <h2 class="section-title">How It Works</h2>
+          <p class="lead text-muted">Transform YouTube videos into interactive knowledge in three simple steps</p>
+        </div>
+        
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="how-it-works-step bg-white">
+              <div class="step-number">1</div>
+              <h4>Paste YouTube URL</h4>
+              <p class="text-muted">Simply paste any YouTube video URL into our extractor. We support videos in any language with available captions.</p>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="how-it-works-step bg-white">
+              <div class="step-number">2</div>
+              <h4>Extract Transcript</h4>
+              <p class="text-muted">Our system instantly extracts the full transcript, formats it with timestamps, and generates an AI summary.</p>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="how-it-works-step bg-white">
+              <div class="step-number">3</div>
+              <h4>Chat & Interact</h4>
+              <p class="text-muted">Start a conversation with our AI to ask questions about the video content and get instant, accurate answers.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="py-5 my-5" id="pricing">
+      <div class="container">
+        <div class="text-center mb-5">
+          <h2 class="section-title">Pricing Plans</h2>
+          <p class="lead text-muted">Affordable options for everyone, from casual users to power users</p>
+        </div>
+        
+        <div class="row">
+          <div class="col-lg-4">
+            <div class="pricing-card">
+              <div class="pricing-header">
+                <h3 class="pricing-title">Free</h3>
+                <div class="pricing-price">$0<span class="pricing-period">/month</span></div>
+                <p>Perfect for casual users and exploration</p>
+              </div>
+              <div class="pricing-features">
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>10 transcripts per month</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>5 AI chat conversations</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Basic AI summaries</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>7-day history</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-times"></i>
+                  </div>
+                  <span class="text-muted">No advanced analytics</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-times"></i>
+                  </div>
+                  <span class="text-muted">No batch processing</span>
+                </div>
+              </div>
+              <div class="pricing-cta">
+                <a href="{{ url_for('signup') }}" class="btn btn-outline-primary btn-lg w-100">Get Started</a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-4">
+            <div class="pricing-card pricing-popular shadow">
+              <div class="pricing-header">
+                <span class="badge bg-light text-primary mb-2">Most Popular</span>
+                <h3 class="pricing-title">Pro</h3>
+                <div class="pricing-price">$9.99<span class="pricing-period">/month</span></div>
+                <p>For regular content creators and researchers</p>
+              </div>
+              <div class="pricing-features">
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>100 transcripts per month</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Unlimited AI chat conversations</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Enhanced AI summaries</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Unlimited history</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Basic analytics</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-times"></i>
+                  </div>
+                  <span class="text-muted">No batch processing</span>
+                </div>
+              </div>
+              <div class="pricing-cta">
+                <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg w-100">Subscribe Now</a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-4">
+            <div class="pricing-card">
+              <div class="pricing-header">
+                <h3 class="pricing-title">Business</h3>
+                <div class="pricing-price">$29.99<span class="pricing-period">/month</span></div>
+                <p>For power users and professional teams</p>
+              </div>
+              <div class="pricing-features">
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Unlimited transcripts</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Unlimited AI chat conversations</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Premium AI summaries & insights</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Unlimited history</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Advanced analytics & reports</span>
+                </div>
+                <div class="pricing-feature">
+                  <div class="pricing-feature-icon">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span>Batch processing of multiple videos</span>
+                </div>
+              </div>
+              <div class="pricing-cta">
+                <a href="{{ url_for('signup') }}" class="btn btn-outline-primary btn-lg w-100">Contact Sales</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-5 bg-light" id="faq">
+      <div class="container">
+        <div class="text-center mb-5">
+          <h2 class="section-title">Frequently Asked Questions</h2>
+          <p class="lead text-muted">Find answers to common questions about TranscriptHub</p>
+        </div>
+        
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <div class="faq-item">
+              <div class="faq-question">
+                <span>What types of YouTube videos can I extract transcripts from?</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                <p>You can extract transcripts from any YouTube video that has captions or subtitles available. This includes auto-generated captions, which most YouTube videos have. The system works with videos in any language that has available captions.</p>
+              </div>
+            </div>
+            
+            <div class="faq-item">
+              <div class="faq-question">
+                <span>How accurate is the AI in answering questions about video content?</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                <p>Our AI assistant is powered by Mistral AI, one of the most advanced language models available. It analyzes the transcript and provides accurate, relevant answers based on the video content. While the AI is highly sophisticated, it's important to note that it can only work with information present in the transcript.</p>
+              </div>
+            </div>
+            
+            <div class="faq-item">
+              <div class="faq-question">
+                <span>Are my transcripts and conversations private?</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                <p>Yes, your data privacy is important to us. All your transcripts and conversations are securely stored and are only accessible to you through your account. We do not share your data with third parties or use it for purposes other than providing our service to you.</p>
+              </div>
+            </div>
+            
+            <div class="faq-item">
+              <div class="faq-question">
+                <span>Can I download or export the transcripts?</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                <p>Yes, you can download any transcript as a text file. This feature is available on all plans, including the free tier. This makes it easy to use the transcript content in other applications or for your research purposes.</p>
+              </div>
+            </div>
+            
+            <div class="faq-item">
+              <div class="faq-question">
+                <span>What if a YouTube video doesn't have captions?</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                <p>TranscriptHub can only extract transcripts from videos that have captions available, either manually added or auto-generated. If a video doesn't have any form of captions, our system will not be able to extract a transcript. Most YouTube videos have auto-generated captions, but some very recent uploads or videos with specific settings may not have them yet.</p>
+              </div>
+            </div>
+            
+            <div class="faq-item">
+              <div class="faq-question">
+                <span>Can I cancel my subscription at any time?</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                <p>Yes, you can cancel your subscription at any time. There are no long-term contracts or cancellation fees. If you cancel, you'll continue to have access to your paid features until the end of your current billing period.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-lg-8 text-center">
+            <h2 class="mb-4">Ready to transform how you interact with YouTube content?</h2>
+            <p class="lead mb-4">Join thousands of users who are already extracting, analyzing, and chatting with video transcripts.</p>
+            <a href="{{ url_for('signup') }}" class="btn btn-light btn-lg">
+              <i class="fas fa-rocket me-2"></i> Get Started Free
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-5 bg-dark text-light">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4 mb-4 mb-md-0">
+            <h5><i class="fas fa-closed-captioning me-2"></i> TranscriptHub</h5>
+            <p class="text-muted">Extract, analyze, and chat with YouTube video transcripts using advanced AI technology.</p>
+            <div class="d-flex mt-3">
+              <a href="#" class="btn btn-sm btn-outline-light rounded-circle me-2">
+                <i class="fab fa-twitter"></i>
+              </a>
+              <a href="#" class="btn btn-sm btn-outline-light rounded-circle me-2">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="btn btn-sm btn-outline-light rounded-circle me-2">
+                <i class="fab fa-linkedin-in"></i>
+              </a>
+              <a href="#" class="btn btn-sm btn-outline-light rounded-circle">
+                <i class="fab fa-instagram"></i>
+              </a>
+            </div>
+          </div>
+          <div class="col-md-2 mb-4 mb-md-0">
+            <h6 class="text-uppercase mb-3">Product</h6>
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2"><a href="#features" class="text-muted">Features</a></li>
+              <li class="mb-2"><a href="#pricing" class="text-muted">Pricing</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">API</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Integrations</a></li>
+            </ul>
+          </div>
+          <div class="col-md-2 mb-4 mb-md-0">
+            <h6 class="text-uppercase mb-3">Company</h6>
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2"><a href="#" class="text-muted">About</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Careers</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Blog</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Press</a></li>
+            </ul>
+          </div>
+          <div class="col-md-2 mb-4 mb-md-0">
+            <h6 class="text-uppercase mb-3">Support</h6>
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2"><a href="#" class="text-muted">Help Center</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Contact</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Status</a></li>
+              <li class="mb-2"><a href="#faq" class="text-muted">FAQ</a></li>
+            </ul>
+          </div>
+          <div class="col-md-2">
+            <h6 class="text-uppercase mb-3">Legal</h6>
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2"><a href="#" class="text-muted">Terms</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Privacy</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Cookies</a></li>
+              <li class="mb-2"><a href="#" class="text-muted">Licenses</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="border-top border-secondary pt-4 mt-4">
+          <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start">
+              <p class="mb-0 text-muted">&copy; 2025 TranscriptHub. All rights reserved.</p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+              <a href="#" class="text-muted me-3">Privacy Policy</a>
+              <a href="#" class="text-muted">Terms of Service</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        const themeIcon = themeToggle.querySelector('i');
+        
+        // Check for saved theme preference or default to 'light'
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        htmlElement.setAttribute('data-bs-theme', savedTheme);
+        
+        // Update icon based on current theme
+        updateThemeIcon();
+        
+        themeToggle.addEventListener('click', function() {
+          const currentTheme = htmlElement.getAttribute('data-bs-theme');
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          
+          htmlElement.setAttribute('data-bs-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+          
+          updateThemeIcon();
+        });
+        
+        function updateThemeIcon() {
+          const currentTheme = htmlElement.getAttribute('data-bs-theme');
+          if (currentTheme === 'dark') {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+          } else {
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+          }
+        }
+        
+        // Navbar scroll behavior
+        const navbar = document.getElementById('navbar');
+        
+        window.addEventListener('scroll', function() {
+          if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+          } else {
+            navbar.classList.remove('scrolled');
+          }
+        });
+        
+        // FAQ accordion
+        const faqItems = document.querySelectorAll('.faq-item');
+        
+        faqItems.forEach(item => {
+          const question = item.querySelector('.faq-question');
+          
+          question.addEventListener('click', function() {
+            const isActive = item.classList.contains('active');
+            
+            // Close all items
+            faqItems.forEach(faq => {
+              faq.classList.remove('active');
+              const icon = faq.querySelector('.faq-question i');
+              icon.classList.remove('fa-chevron-up');
+              icon.classList.add('fa-chevron-down');
+            });
+            
+            // Toggle current item
+            if (!isActive) {
+              item.classList.add('active');
+              const icon = item.querySelector('.faq-question i');
+              icon.classList.remove('fa-chevron-down');
+              icon.classList.add('fa-chevron-up');
+            }
+          });
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+          anchor.addEventListener('click', function(e) {
+            if (this.getAttribute('href') !== '#') {
+              e.preventDefault();
+              
+              const targetId = this.getAttribute('href');
+              const targetElement = document.querySelector(targetId);
+              
+              if (targetElement) {
+                const navbarHeight = document.querySelector('.navbar').offsetHeight;
+                const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
+                
+                window.scrollTo({
+                  top: targetPosition,
+                  behavior: 'smooth'
+                });
+                
+                // Close mobile menu if open
+                const navbarToggler = document.querySelector('.navbar-toggler');
+                const navbarCollapse = document.querySelector('.navbar-collapse');
+                
+                if (navbarCollapse.classList.contains('show')) {
+                  navbarToggler.click();
+                }
+              }
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

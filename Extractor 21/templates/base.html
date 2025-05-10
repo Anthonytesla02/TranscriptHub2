@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+  <head>
+    <meta charset="utf-8">
+    <title>TranscriptHub - YouTube Transcript Extractor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5.3 CSS with CSS variables for theming -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner-container">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Processing...</p>
+      </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+      <div class="container">
+        <a class="navbar-brand" href="{% if current_user.is_authenticated %}{{ url_for('dashboard') }}{% else %}{{ url_for('landing') }}{% endif %}">
+          <i class="fas fa-closed-captioning brand-icon"></i> TranscriptHub
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+          <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            {% if current_user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-home"></i> Home
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('chats') }}">
+                <i class="fas fa-robot"></i> AI Chats
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+          
+          <div class="d-flex align-items-center">
+            <!-- Theme toggle -->
+            <button id="themeToggle" class="btn btn-icon me-2">
+              <i class="fas fa-moon"></i>
+            </button>
+            
+            {% if current_user.is_authenticated %}
+              <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                  <i class="fas fa-user-circle me-1"></i> Account
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li class="dropdown-item disabled">Signed in as <strong>{{ current_user.username }}</strong></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="fas fa-list me-2"></i>My Transcripts</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('chats') }}"><i class="fas fa-robot me-2"></i>AI Chats</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                </ul>
+              </div>
+            {% else %}
+              <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">
+                <i class="fas fa-sign-in-alt me-1"></i> Login
+              </a>
+              <a class="btn btn-primary" href="{{ url_for('signup') }}">
+                <i class="fas fa-user-plus me-1"></i> Sign Up
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container mt-4">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            {% if category == 'danger' %}
+              {% set icon = 'exclamation-triangle' %}
+            {% elif category == 'success' %}
+              {% set icon = 'check-circle' %}
+            {% elif category == 'warning' %}
+              {% set icon = 'exclamation-circle' %}
+            {% else %}
+              {% set icon = 'info-circle' %}
+            {% endif %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show custom-alert" role="alert">
+              <i class="fas fa-{{ icon }} me-2"></i> {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- Header Section for branding (only on homepage when logged out) -->
+    {% if not current_user.is_authenticated and request.path == url_for('login') or request.path == url_for('signup') %}
+    <div class="container mt-5 mb-5 text-center">
+      <div class="app-logo">
+        <i class="fas fa-closed-captioning fa-3x"></i>
+      </div>
+      <h1 class="display-5 fw-bold mt-3">TranscriptHub</h1>
+      <p class="lead">Extract, save, and organize YouTube video transcripts with ease</p>
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <div class="container main-content py-4">
+      {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6">
+            <h5><i class="fas fa-closed-captioning me-2"></i> TranscriptHub</h5>
+            <p class="text-muted">Extract and manage YouTube video transcripts effortlessly.</p>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <p class="text-muted">&copy; 2025 TranscriptHub</p>
+            <div class="footer-links">
+              <a href="#" class="text-muted me-3"><i class="fas fa-question-circle"></i> Help</a>
+              <a href="#" class="text-muted me-3"><i class="fas fa-shield-alt"></i> Privacy</a>
+              <a href="#" class="text-muted"><i class="fas fa-file-contract"></i> Terms</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        const themeIcon = themeToggle.querySelector('i');
+        
+        // Check for saved theme preference or default to 'light'
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        htmlElement.setAttribute('data-bs-theme', savedTheme);
+        
+        // Update icon based on current theme
+        updateThemeIcon();
+        
+        themeToggle.addEventListener('click', function() {
+          const currentTheme = htmlElement.getAttribute('data-bs-theme');
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          
+          htmlElement.setAttribute('data-bs-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+          
+          updateThemeIcon();
+        });
+        
+        function updateThemeIcon() {
+          const currentTheme = htmlElement.getAttribute('data-bs-theme');
+          if (currentTheme === 'dark') {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+          } else {
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+          }
+        }
+        
+        // Form submission loading overlay
+        const forms = document.querySelectorAll('form');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        forms.forEach(form => {
+          form.addEventListener('submit', function() {
+            // Only show loading for certain forms (like extract form)
+            if (form.classList.contains('loading-form')) {
+              loadingOverlay.classList.add('active');
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

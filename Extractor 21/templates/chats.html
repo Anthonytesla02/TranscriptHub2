@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4 fade-in">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2 class="fw-bold">
+        <i class="fas fa-comments text-primary me-2"></i>Your Conversations
+      </h2>
+      <p class="text-muted">All your AI conversations based on YouTube transcripts</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary me-2">
+        <i class="fas fa-list me-1"></i>All Transcripts
+      </a>
+      <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>New Transcript
+      </a>
+    </div>
+  </div>
+
+  <!-- Search bar -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="input-group">
+        <span class="input-group-text bg-light border-0">
+          <i class="fas fa-search text-muted"></i>
+        </span>
+        <input 
+          type="text" 
+          class="form-control border-0 bg-light" 
+          id="searchChats" 
+          placeholder="Search your conversations..."
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Chats listing -->
+  <div id="chatsList">
+    {% if chats %}
+      {% for chat in chats %}
+        <div class="card mb-3 chat-card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+              <div class="chat-icon me-3">
+                <i class="fas fa-comments"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h5 class="mb-1">{{ chat.title }}</h5>
+                <div class="text-muted small">
+                  <i class="far fa-calendar-alt me-1"></i> 
+                  Created on {{ chat.created_at.strftime('%b %d, %Y') }}
+                </div>
+              </div>
+              <a href="{{ url_for('chat', chat_id=chat.id) }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-comments me-1"></i> Continue Chat
+              </a>
+            </div>
+            
+            {% if chat.messages %}
+              {% set last_messages = chat.messages[-2:] if chat.messages|length >= 2 else chat.messages %}
+              <div class="chat-preview mt-3">
+                {% for message in last_messages %}
+                  <div class="preview-message">
+                    <span class="badge {% if message.role == 'user' %}bg-primary{% else %}bg-secondary{% endif %} me-2">
+                      {% if message.role == 'user' %}You{% else %}AI{% endif %}
+                    </span>
+                    <span class="message-preview">
+                      {{ message.content|truncate(100, true) }}
+                    </span>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center text-muted small mt-3">
+                <i class="fas fa-info-circle me-1"></i> 
+                No messages in this conversation yet
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card">
+        <div class="card-body text-center py-5">
+          <div class="empty-state-icon mb-3">
+            <i class="fas fa-comments fa-3x text-muted"></i>
+          </div>
+          <h4>No conversations yet</h4>
+          <p class="text-muted">
+            Start a new conversation by extracting a YouTube transcript.
+          </p>
+          <a href="{{ url_for('index') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Extract Transcript
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.chat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(13, 110, 253, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #0d6efd;
+}
+
+.chat-preview {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.preview-message {
+  margin-bottom: 8px;
+}
+
+.preview-message:last-child {
+  margin-bottom: 0;
+}
+
+.message-preview {
+  font-size: 0.9rem;
+}
+
+.empty-state-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f8f9fa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+.chat-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: none;
+}
+
+.chat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('searchChats');
+  const chatCards = document.querySelectorAll('.chat-card');
+  
+  searchInput.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
+    
+    chatCards.forEach(card => {
+      const title = card.querySelector('h5').textContent.toLowerCase();
+      const preview = card.querySelector('.chat-preview') ? 
+                      card.querySelector('.chat-preview').textContent.toLowerCase() : '';
+      
+      if (title.includes(searchTerm) || preview.includes(searchTerm)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center slide-up">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <h3 class="card-title text-center mb-4">Create Account</h3>
+        
+        <form method="POST">
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-user"></i></span>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="username" 
+                name="username" 
+                placeholder="Choose a username" 
+                required 
+                autocomplete="username"
+              />
+            </div>
+            <div class="form-text">Username must be unique and will be used to log in.</div>
+          </div>
+          
+          <div class="mb-4">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+              <input 
+                type="password" 
+                class="form-control" 
+                id="password" 
+                name="password" 
+                placeholder="Create a password" 
+                required 
+                autocomplete="new-password"
+              />
+            </div>
+            <div class="form-text">Choose a strong password to secure your account.</div>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="fas fa-user-plus me-2"></i>Sign Up
+            </button>
+          </div>
+        </form>
+        
+        <div class="text-center mt-4">
+          <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}" class="fw-semibold">Sign In</a></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card mt-4">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="fas fa-shield-alt me-2 text-primary"></i>Account Benefits
+        </h5>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item border-0 ps-0">
+            <i class="fas fa-check-circle text-success me-2"></i>Save transcript history
+          </li>
+          <li class="list-group-item border-0 ps-0">
+            <i class="fas fa-check-circle text-success me-2"></i>Access from any device
+          </li>
+          <li class="list-group-item border-0 ps-0">
+            <i class="fas fa-check-circle text-success me-2"></i>Organize your transcripts
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

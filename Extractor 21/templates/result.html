@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row justify-content-center slide-up">
+    <div class="col-lg-10">
+      <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"><i class="fas fa-list"></i> My Transcripts</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Transcript Result</li>
+        </ol>
+      </nav>
+
+      <!-- Video Info Card -->
+      <div class="card mb-4 transcript-card">
+        <div class="transcript-header">
+          <h5 class="transcript-title">
+            <i class="fab fa-youtube text-danger me-2"></i>YouTube Transcript
+          </h5>
+          <div class="transcript-actions">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-history"></i> View All
+            </a>
+            <a href="{{ url_for('index') }}" download="transcript.txt" 
+              onclick="this.href='data:text/plain;charset=utf-8,' + encodeURIComponent(`{{ transcript }}`)" 
+              class="btn btn-sm btn-primary">
+              <i class="fas fa-download"></i> Download
+            </a>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="video-info mb-4">
+            <div class="d-flex align-items-center">
+              <div class="video-thumbnail me-3">
+                {% set video_id = video_url.split('v=')[1].split('&')[0] if 'v=' in video_url else video_url.split('/')[-1] %}
+                <img 
+                  src="https://img.youtube.com/vi/{{ video_id }}/mqdefault.jpg" 
+                  alt="Video Thumbnail" 
+                  class="img-fluid rounded"
+                  style="max-width: 200px;"
+                >
+              </div>
+              <div>
+                <h5 class="mb-2">Video URL</h5>
+                <a href="{{ video_url }}" target="_blank" class="d-block text-break mb-2">
+                  <i class="fas fa-external-link-alt me-1"></i> {{ video_url }}
+                </a>
+                <div class="d-flex mt-2">
+                  <span class="badge rounded-pill bg-success me-2">
+                    <i class="fas fa-check-circle me-1"></i> Extraction Complete
+                  </span>
+                  <span class="badge rounded-pill bg-primary">
+                    <i class="fas fa-save me-1"></i> Saved to History
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Tab navigation -->
+          <ul class="nav nav-tabs mb-3" id="contentTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="transcript-tab" data-bs-toggle="tab" data-bs-target="#transcript-content" 
+                     type="button" role="tab" aria-controls="transcript-content" aria-selected="true">
+                <i class="fas fa-closed-captioning me-2"></i>Transcript
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-content" 
+                     type="button" role="tab" aria-controls="summary-content" aria-selected="false">
+                <i class="fas fa-align-left me-2"></i>AI Summary
+              </button>
+            </li>
+          </ul>
+          
+          <!-- Tab content -->
+          <div class="tab-content" id="contentTabsContent">
+            <!-- Transcript Tab -->
+            <div class="tab-pane fade show active" id="transcript-content" role="tabpanel" aria-labelledby="transcript-tab">
+              <div class="mb-3">
+                <label for="searchTranscript" class="form-label fw-bold">
+                  <i class="fas fa-search me-2"></i>Search Transcript
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="searchTranscript" 
+                  placeholder="Type to search within transcript..."
+                >
+                <div class="form-text">
+                  <span id="searchMatches">0</span> matches found
+                </div>
+              </div>
+              
+              <div class="transcript-container">
+                <div class="d-flex justify-content-between mb-2">
+                  <h5 class="fw-bold mb-3">
+                    <i class="fas fa-closed-captioning me-2 text-primary"></i>Transcript Content
+                  </h5>
+                  <div class="transcript-controls">
+                    <button class="btn btn-sm btn-outline-secondary me-1" id="copyTranscript">
+                      <i class="fas fa-copy"></i> Copy All
+                    </button>
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-sm btn-outline-secondary" id="decreaseFont">
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary" id="increaseFont">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <pre id="transcriptContent" class="transcript">{{ transcript or 'No transcript available.' }}</pre>
+              </div>
+            </div>
+            
+            <!-- Summary Tab -->
+            <div class="tab-pane fade" id="summary-content" role="tabpanel" aria-labelledby="summary-tab">
+              {% if summary %}
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <div class="ai-summary formatted-content">
+                      {{ summary|safe|replace('\n', '<br>')|replace('  ', '&nbsp;&nbsp;') }}
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle me-2"></i> No summary available for this transcript.
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggested Actions -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="fas fa-lightbulb me-2 text-warning"></i>What's Next?
+          </h5>
+          
+          <!-- AI Chat Button -->
+          <div class="ai-chat-button mb-4">
+            <div class="d-flex align-items-center p-3 bg-primary-subtle rounded-3 border border-primary-subtle">
+              <div class="me-3">
+                <i class="fas fa-robot fa-2x text-primary"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h5 class="mb-1">Chat with AI about this video</h5>
+                <p class="mb-2">Ask questions about the content and get instant answers based on the transcript.</p>
+                <form action="{{ url_for('create_chat', transcript_id=transcript_id) }}" method="POST">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-comments me-2"></i>Start AI Chat
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Hidden download link for potential future use -->
+          <a id="downloadLink" href="{{ url_for('index') }}" download="transcript.txt" 
+             onclick="this.href='data:text/plain;charset=utf-8,' + encodeURIComponent(`{{ transcript }}`)" 
+             style="display: none;">Hidden Download Link</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript for transcript interactions -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Transcript font size control
+      const transcriptContent = document.getElementById('transcriptContent');
+      const increaseFontBtn = document.getElementById('increaseFont');
+      const decreaseFontBtn = document.getElementById('decreaseFont');
+      let currentFontSize = parseFloat(window.getComputedStyle(transcriptContent).fontSize);
+      
+      increaseFontBtn.addEventListener('click', function() {
+        currentFontSize += 1;
+        transcriptContent.style.fontSize = currentFontSize + 'px';
+      });
+      
+      decreaseFontBtn.addEventListener('click', function() {
+        if (currentFontSize > 10) {
+          currentFontSize -= 1;
+          transcriptContent.style.fontSize = currentFontSize + 'px';
+        }
+      });
+      
+      // Copy transcript
+      const copyBtn = document.getElementById('copyTranscript');
+      copyBtn.addEventListener('click', function() {
+        const transcriptText = transcriptContent.textContent;
+        navigator.clipboard.writeText(transcriptText).then(function() {
+          const originalText = copyBtn.innerHTML;
+          copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+          setTimeout(function() {
+            copyBtn.innerHTML = originalText;
+          }, 2000);
+        });
+      });
+      
+      // Search within transcript
+      const searchInput = document.getElementById('searchTranscript');
+      const searchMatches = document.getElementById('searchMatches');
+      
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.trim().toLowerCase();
+        if (searchTerm.length < 2) {
+          // Reset highlighting
+          transcriptContent.innerHTML = transcriptContent.textContent;
+          searchMatches.textContent = '0';
+          return;
+        }
+        
+        // Get the original text
+        const originalText = transcriptContent.textContent;
+        
+        // Count matches
+        const regex = new RegExp(searchTerm, 'gi');
+        const matches = originalText.match(regex);
+        const matchCount = matches ? matches.length : 0;
+        searchMatches.textContent = matchCount;
+        
+        // Highlight matches
+        let highlightedText = originalText.replace(regex, function(match) {
+          return '<mark class="highlight">' + match + '</mark>';
+        });
+        
+        transcriptContent.innerHTML = highlightedText;
+      });
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="chat-container">
+  <div class="row h-100">
+    <!-- Sidebar with transcript info -->
+    <div class="col-lg-3 d-none d-lg-block sidebar-column">
+      <div class="chat-sidebar">
+        <div class="transcript-info mb-3">
+          <div class="video-thumbnail mb-3">
+            {% set video_id = transcript.video_url.split('v=')[1].split('&')[0] if 'v=' in transcript.video_url else transcript.video_url.split('/')[-1] %}
+            <img 
+              src="https://img.youtube.com/vi/{{ video_id }}/mqdefault.jpg" 
+              alt="Video Thumbnail" 
+              class="img-fluid rounded"
+            >
+          </div>
+          <h6 class="mb-2">Video Source</h6>
+          <a href="{{ transcript.video_url }}" target="_blank" class="d-block text-break mb-3 small">
+            <i class="fab fa-youtube text-danger me-1"></i> {{ transcript.video_url }}
+          </a>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Transcript</h6>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="toggleTranscript">
+            <label class="form-check-label small" for="toggleTranscript">Show</label>
+          </div>
+        </div>
+        
+        <div class="transcript-preview collapse" id="transcriptPreview">
+          <div class="card">
+            <div class="card-body">
+              <pre class="transcript-content">{{ transcript.content }}</pre>
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <div class="d-flex justify-content-between mb-3">
+          <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back
+          </a>
+          <a href="{{ url_for('chats') }}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-comments me-1"></i> All Chats
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main chat area -->
+    <div class="col-lg-9 col-md-12 chat-main-column">
+      <div class="chat-header">
+        <h4 class="mb-0"><i class="fas fa-comments text-primary me-2"></i>{{ chat.title }}</h4>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-ellipsis-v"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-list me-2"></i>All Transcripts
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ transcript.video_url }}" target="_blank">
+                <i class="fab fa-youtube me-2 text-danger"></i>Watch Video
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="chat-messages" id="chatMessages">
+        <div class="ai-introduction">
+          <div class="ai-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="message-content">
+            <p>Hi! I'm your AI assistant for this YouTube video. I can answer questions based on the transcript. How can I help you?</p>
+          </div>
+        </div>
+        
+        {% for message in messages %}
+          <div class="message {% if message.role == 'user' %}user-message{% else %}ai-message{% endif %}">
+            <div class="{% if message.role == 'user' %}user-avatar{% else %}ai-avatar{% endif %}">
+              {% if message.role == 'user' %}
+                <i class="fas fa-user"></i>
+              {% else %}
+                <i class="fas fa-robot"></i>
+              {% endif %}
+            </div>
+            <div class="message-content">
+              {{ message.content|safe|replace('\n', '<br>')|replace('  ', '&nbsp;&nbsp;') }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
+      <div class="chat-input-container">
+        <form id="messageForm">
+          <div class="input-group">
+            <textarea 
+              class="form-control" 
+              id="messageInput" 
+              placeholder="Type your question about the video transcript..." 
+              rows="2"
+              required
+            ></textarea>
+            <button class="btn btn-primary" type="submit" id="sendButton">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </form>
+        <div class="form-text text-center small">
+          Ask questions about the video's content based on the transcript
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const messageForm = document.getElementById('messageForm');
+  const messageInput = document.getElementById('messageInput');
+  const chatMessages = document.getElementById('chatMessages');
+  const toggleTranscript = document.getElementById('toggleTranscript');
+  const transcriptPreview = document.getElementById('transcriptPreview');
+  
+  // Toggle transcript visibility
+  toggleTranscript.addEventListener('change', function() {
+    if (this.checked) {
+      transcriptPreview.classList.add('show');
+    } else {
+      transcriptPreview.classList.remove('show');
+    }
+  });
+  
+  // Auto-resize textarea
+  messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+  });
+  
+  // Scroll to bottom of chat
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  
+  // Add user message to chat
+  function addUserMessage(content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message user-message';
+    messageDiv.innerHTML = `
+      <div class="user-avatar">
+        <i class="fas fa-user"></i>
+      </div>
+      <div class="message-content">
+        ${content.replace(/\n/g, '<br>').replace(/  /g, '&nbsp;&nbsp;')}
+      </div>
+    `;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+  
+  // Add AI message to chat
+  function addAIMessage(content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    messageDiv.innerHTML = `
+      <div class="ai-avatar">
+        <i class="fas fa-robot"></i>
+      </div>
+      <div class="message-content">
+        ${content.replace(/\n/g, '<br>').replace(/  /g, '&nbsp;&nbsp;')}
+      </div>
+    `;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+  
+  // Add AI thinking indicator
+  function addThinkingIndicator() {
+    const indicatorDiv = document.createElement('div');
+    indicatorDiv.className = 'message ai-message thinking';
+    indicatorDiv.id = 'thinking-indicator';
+    indicatorDiv.innerHTML = `
+      <div class="ai-avatar">
+        <i class="fas fa-robot"></i>
+      </div>
+      <div class="message-content">
+        <div class="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    `;
+    chatMessages.appendChild(indicatorDiv);
+    scrollToBottom();
+  }
+  
+  // Remove thinking indicator
+  function removeThinkingIndicator() {
+    const indicator = document.getElementById('thinking-indicator');
+    if (indicator) {
+      indicator.remove();
+    }
+  }
+  
+  // Handle message form submission
+  messageForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    // Clear input
+    addUserMessage(message);
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    
+    // Show thinking indicator
+    addThinkingIndicator();
+    
+    try {
+      // Send message to server
+      const response = await fetch('{{ url_for("send_message") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: {{ chat.id }},
+          content: message
+        })
+      });
+      
+      // Process response
+      if (response.ok) {
+        const data = await response.json();
+        removeThinkingIndicator();
+        addAIMessage(data.response);
+      } else {
+        const errorData = await response.json();
+        removeThinkingIndicator();
+        addAIMessage(`Error: ${errorData.error || 'Something went wrong, please try again.'}`);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      removeThinkingIndicator();
+      addAIMessage('Error: Unable to get a response. Please try again later.');
+    }
+  });
+  
+  // Initial scroll to bottom
+  scrollToBottom();
+});
+</script>
+
+<style>
+.chat-container {
+  height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-sidebar {
+  height: 100%;
+  padding: 15px;
+  border-right: 1px solid rgba(0,0,0,0.1);
+  overflow-y: auto;
+}
+
+.transcript-preview {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.transcript-content {
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  max-height: 100%;
+}
+
+.chat-main-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-header {
+  padding: 15px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.user-message {
+  flex-direction: row-reverse;
+}
+
+.ai-message {
+  flex-direction: row;
+}
+
+.user-avatar, .ai-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.user-avatar {
+  background-color: #007bff;
+  color: white;
+  margin-left: 10px;
+}
+
+.ai-avatar {
+  background-color: #6c757d;
+  color: white;
+  margin-right: 10px;
+}
+
+.message-content {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+}
+
+.user-message .message-content {
+  background-color: #007bff;
+  color: white;
+  border-top-right-radius: 5px;
+}
+
+.ai-message .message-content {
+  background-color: #f0f2f5;
+  color: #333;
+  border-top-left-radius: 5px;
+}
+
+.ai-introduction {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.ai-introduction .message-content {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  border-radius: 18px;
+  border-top-left-radius: 5px;
+  border-left: 4px solid #1976d2;
+}
+
+.chat-input-container {
+  padding: 15px;
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+textarea {
+  resize: none;
+  overflow: hidden;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.typing-indicator span {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  background-color: #888;
+  display: inline-block;
+  margin: 0 1px;
+  animation: bounce 1.5s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (max-width: 992px) {
+  .message-content {
+    max-width: 90%;
+  }
+}
+</style>
+{% endblock %}
