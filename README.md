@@ -35,12 +35,24 @@ TranscriptHub is a Flask web application that allows users to extract transcript
    - `DATABASE_URL`: PostgreSQL connection string (provided by Replit)
    - `MISTRAL_API_KEY`: Your Mistral AI API key for summaries and chat
 
-3. Run the application:
+3. Run the application using one of these methods:
+   
+   **Method 1 (Recommended for Replit):**
+   ```
+   python run_app.py
+   ```
+
+   **Method 2 (Alternative):**
+   ```
+   python app.py
+   ```
+
+   **Method 3 (Using Shell Script):**
    ```
    ./start.sh
    ```
 
-4. Access the application at: http://localhost:5000
+4. Access the application at: http://localhost:5000 or the Replit webview URL
 
 ### Test Account
 

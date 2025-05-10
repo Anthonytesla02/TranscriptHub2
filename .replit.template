@@ -1,0 +1,25 @@
+run = ["python", "app.py"]
+entrypoint = "app.py"
+
+[env]
+FLASK_APP = "app.py"
+FLASK_DEBUG = "1"
+
+[packager]
+language = "python3"
+
+[packager.features]
+enabledForHosting = false
+packageSearch = true
+guessImports = true
+
+[languages.python3]
+pattern = "**/*.py"
+syntax = "python"
+
+[languages.python3.languageServer]
+start = ["pylsp"]
+
+[server]
+host = "0.0.0.0"
+port = 5000
