@@ -24,8 +24,8 @@ def main():
         load_dotenv()
         logger.info("Environment variables loaded")
         
-        # Import the app
-        from main import app
+        # Import the app from the new api directory structure
+        from api.app import app
         
         # Run the application
         host = os.environ.get('HOST', '0.0.0.0')
