@@ -1,0 +1,85 @@
+This error is coming from Flask-SQLAlchemy’s attempt to create your app’s instance folder inside your project root:
+
+OSError: [Errno 30] Read-only file system: '/var/task/instance'
+
+On Vercel, the project directory (/var/task/...) is read-only at runtime—you can’t write a new instance/ folder there. You have two main ways to fix it:
+
+
+---
+
+1) Move your database file into a writable location (/tmp)
+
+If you really need to stick with SQLite you must point both Flask’s instance_path and your database file into /tmp (the only writable directory on Vercel):
+
+import os
+import tempfile
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+
+# create a temporary instance folder under /tmp
+tmp_instance = os.path.join(tempfile.gettempdir(), "flask_instance")
+os.makedirs(tmp_instance, exist_ok=True)
+
+app = Flask(
+    __name__,
+    instance_path=tmp_instance,
+    instance_relative_config=True
+)
+
+# point SQLite to /tmp as well
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(tmp_instance, 'app.db')}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+instance_path=tmp_instance tells Flask-SQLAlchemy where to look (and create) its instance folder.
+
+/tmp is ephemeral but writable on Vercel’s serverless functions.
+
+Drawback: your SQLite data will be wiped any time the function “cold starts.”
+
+
+
+---
+
+2) Switch to a managed (remote) database
+
+For any production-grade deployment on Vercel, it’s better to use a hosted database (Postgres, MySQL, etc.) rather than SQLite. That way you don’t have to worry about local file permissions or data loss between cold starts. Most “serverless-friendly” databases offer a free tier:
+
+1. Provision (e.g.) a PlanetScale or Supabase Postgres instance.
+
+
+2. Add its connection URL to your Vercel dashboard under Settings → Environment Variables, e.g.:
+
+DATABASE_URL=postgresql://username:password@host:5432/dbname
+
+
+3. In your main.py, read from the env var:
+
+import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+
+4. Deploy again—Flask-SQLAlchemy will no longer try to write any local folders.
+
+
+
+
+---
+
+Summary
+
+Quick & dirty: reroute instance_path and your SQLite file into /tmp (writable but ephemeral).
+
+Recommended (production): migrate off SQLite to a remote database (Postgres, MySQL, etc.) so you never hit the read-only filesystem.
+
+
+Either approach will stop Flask-SQLAlchemy from trying to create /var/task/instance and eliminate the Errno 30 errors.
+
