@@ -3,7 +3,12 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9",   // or "python3.10" if supported
+        "maxDuration": 30,
+        "memory": 1024
+      }
     }
   ],
   "routes": [
@@ -12,13 +17,6 @@
       "dest": "/api/index.py"
     }
   ],
-  "functions": {
-    "api/index.py": {
-      "runtime": "vercel-python@3.12",
-      "maxDuration": 30,
-      "memory": 1024
-    }
-  },
   "excludeFiles": [
     "**/__pycache__/**",
     "**/*.pyc",
